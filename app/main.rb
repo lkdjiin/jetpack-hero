@@ -17,7 +17,7 @@ def defaults(args)
     y: 200,
     w: 7 * HERO_SCALE,
     h: 17 * HERO_SCALE,
-    path: 'sprites/hero-standing.png',
+    path: 'sprites/hero-flying.png',
     impulse: 0,
     moving: :none,
     flip_horizontally: false
@@ -56,6 +56,7 @@ def calc(args)
   y_before = args.state.hero.y
   x_before = args.state.hero.x
 
+  args.state.hero.path = 'sprites/hero-flying.png'
   args.state.hero.impulse *= IMPULSE_DECREASE
   args.state.hero.y += FALL
   args.state.hero.y += args.state.hero.impulse
@@ -82,6 +83,7 @@ def calc(args)
     elsif ascending
       args.state.hero.y = args.state.platform.y - args.state.hero.h - 2
     else
+      args.state.hero.path = 'sprites/hero-standing.png'
       args.state.hero.y = args.state.platform.y + args.state.platform.h
     end
   end
