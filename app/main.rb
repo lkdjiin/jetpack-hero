@@ -17,9 +17,10 @@ def defaults(args)
     y: 200,
     w: 7 * HERO_SCALE,
     h: 17 * HERO_SCALE,
-    path: 'sprites/hero.png',
+    path: 'sprites/hero-standing.png',
     impulse: 0,
     moving: :none,
+    flip_horizontally: false
   }
 
   args.state.platform ||= {
@@ -61,8 +62,10 @@ def calc(args)
 
   if args.state.hero.moving == :left
     args.state.hero.x -= RL_SPEED
+    args.state.hero.flip_horizontally = false
   elsif args.state.hero.moving == :right
     args.state.hero.x += RL_SPEED
+    args.state.hero.flip_horizontally = true
   end
 
   if args.state.hero.y - y_before < 0
