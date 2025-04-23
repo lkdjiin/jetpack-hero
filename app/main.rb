@@ -4,184 +4,218 @@ RL_SPEED = 5 # Right/left speed
 IMPULSE = 4 # Jetpack power
 IMPULSE_DECREASE = 0.9 # Jetpack power ratio decrease per frame
 
-def tick(args)
-  defaults(args)
-  render(args)
-  input(args)
-  calc(args)
-end
+class Game
+  attr_gtk
 
-def defaults(args)
-  args.state.hero ||= {
-    x: 120,
-    y: 700,
-    w: 7 * HERO_SCALE,
-    h: 17 * HERO_SCALE,
-    path: 'sprites/hero-flying.png',
-    flip_horizontally: true,
-    impulse: 0,
-    moving: :none,
-    jetpack_power: 100,
-    ore: 0,
-  }
+  def tick
+    defaults
+    render
+    input
+    calc
+  end
 
-  args.state.platforms ||= [
-    { x: 0, y: 570, w: 200, h: 12, path: 'sprites/tile.png' },
-    { x: 400, y: 570, w: 700, h: 12, path: 'sprites/tile.png' },
-    { x: 1200, y: 570, w: 80, h: 12, path: 'sprites/tile.png' },
-    { x: 0, y: 420, w: 200, h: 12, path: 'sprites/tile.png' },
-    { x: 400, y: 420, w: 700, h: 12, path: 'sprites/tile.png' },
-    { x: 1200, y: 420, w: 80, h: 12, path: 'sprites/tile.png' },
-    { x: 0, y: 270, w: 200, h: 12, path: 'sprites/tile.png' },
-    { x: 400, y: 270, w: 700, h: 12, path: 'sprites/tile.png' },
-    { x: 1200, y: 270, w: 80, h: 12, path: 'sprites/tile.png' },
-    { x: 0, y: 130, w: 1280, h: 12, path: 'sprites/tile.png' },
-  ]
+  def defaults
+    state.hero ||= {
+      x: 120,
+      y: 700,
+      w: 7 * HERO_SCALE,
+      h: 17 * HERO_SCALE,
+      path: 'sprites/hero-flying.png',
+      flip_horizontally: true,
+      impulse: 0,
+      moving: :none,
+      jetpack_power: 100,
+      ore: 0,
+      ascending: false,
+    }
 
-  args.state.fuel ||= [
-    { x:700, y: 282, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
-    { x:700, y: 582, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
-  ]
+    state.platforms ||= [
+      { x: 0, y: 570, w: 200, h: 12, path: 'sprites/tile.png' },
+      { x: 400, y: 570, w: 700, h: 12, path: 'sprites/tile.png' },
+      { x: 1200, y: 570, w: 80, h: 12, path: 'sprites/tile.png' },
+      { x: 0, y: 420, w: 200, h: 12, path: 'sprites/tile.png' },
+      { x: 400, y: 420, w: 700, h: 12, path: 'sprites/tile.png' },
+      { x: 1200, y: 420, w: 80, h: 12, path: 'sprites/tile.png' },
+      { x: 0, y: 270, w: 200, h: 12, path: 'sprites/tile.png' },
+      { x: 400, y: 270, w: 700, h: 12, path: 'sprites/tile.png' },
+      { x: 1200, y: 270, w: 80, h: 12, path: 'sprites/tile.png' },
+      { x: 0, y: 130, w: 1280, h: 12, path: 'sprites/tile.png' },
+    ]
 
-  args.state.ores ||= [
-    { x:1220, y: 282, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-    { x:800, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-    { x:1220, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-    { x:800, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-    { x:1220, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-  ]
+    state.fuel ||= [
+      { x:700, y: 282, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+      { x:700, y: 582, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+    ]
 
-  args.state.collector ||= { x:0, y: 582, w: 80, h: 80, path: 'sprites/collector.png' }
+    state.ores ||= [
+      { x:1220, y: 282, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      { x:800, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      { x:1220, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      { x:800, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      { x:1220, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+    ]
 
-  args.state.level ||= {
-    remaining_ores: 5,
-    completed: false,
-  }
-end
+    state.collector ||= { x:0, y: 582, w: 80, h: 80, path: 'sprites/collector.png' }
 
-def render(args)
-  args.outputs.solids << { x: 0, y: 130, w: 1280, h: 610, r: 0, g: 0, b: 0 }
-  args.outputs.solids << { x: 0, y: 0, w: 1280, h: 130, r: 60, g: 60, b: 70 }
-  args.outputs.solids << { x: 305, y: 54, w: 600, h: 27, r: 255, g: 0, b: 0 }
-  args.outputs.solids << { x: 305, y: 54, w: args.state.hero.jetpack_power * 6, h: 27, r: 255, g: 255, b: 0 }
-  args.outputs.sprites << args.state.platforms
-  args.outputs.sprites << args.state.fuel
-  args.outputs.sprites << args.state.ores
-  if args.state.hero.ore == 1
-    args.outputs.sprites << {
-      x: args.state.hero.x,
-      y: args.state.hero.y,
-      w: 30, h: 40, path: 'sprites/gold.png'
+    state.level ||= {
+      remaining_ores: 5,
+      completed: false,
     }
   end
-  args.outputs.sprites << args.state.hero
-  args.outputs.sprites << args.state.collector
-  args.outputs.labels << {
-    x: 200,
-    y: 45,
-    size_px: 40,
-    alignment_enum: 0,
-    vertical_alignment_enum: 0,
-    text: "POWER",
-    r: 255,
-    g: 255,
-    b: 255,
-  }
-  if args.state.level.completed
-    args.outputs.labels << {
-      x: 640,
-      y: 360,
-      size_px: 120,
-      alignment_enum: 1,
-      vertical_alignment_enum: 1,
-      text: "Level Completed!",
+
+  def render
+    outputs.solids << { x: 0, y: 130, w: 1280, h: 610, r: 0, g: 0, b: 0 }
+    outputs.solids << { x: 0, y: 0, w: 1280, h: 130, r: 60, g: 60, b: 70 }
+    outputs.solids << { x: 305, y: 54, w: 600, h: 27, r: 255, g: 0, b: 0 }
+    outputs.solids << { x: 305, y: 54, w: state.hero.jetpack_power * 6, h: 27, r: 255, g: 255, b: 0 }
+    outputs.sprites << state.platforms
+    outputs.sprites << state.fuel
+    outputs.sprites << state.ores
+    if state.hero.ore == 1
+      outputs.sprites << {
+        x: state.hero.x,
+        y: state.hero.y,
+        w: 30, h: 40, path: 'sprites/gold.png'
+      }
+    end
+    outputs.sprites << state.hero
+    outputs.sprites << state.collector
+    outputs.labels << {
+      x: 200,
+      y: 45,
+      size_px: 40,
+      alignment_enum: 0,
+      vertical_alignment_enum: 0,
+      text: "POWER",
       r: 255,
       g: 255,
       b: 255,
     }
-  end
-end
-
-def input(args)
-  if args.inputs.left
-    args.state.hero.moving = :left
-  elsif args.inputs.right
-    args.state.hero.moving = :right
-  else
-    args.state.hero.moving = :none
-  end
-
-  if args.inputs.keyboard.control || args.inputs.controller_one.y
-    if args.state.hero.jetpack_power > 0
-      args.state.hero.impulse = IMPULSE
-      args.state.hero.jetpack_power -= 0.1
-      args.audio[:jetpack] = { input: "sounds/jetpack.wav" } unless args.audio[:jetpack]
+    if state.level.completed
+      outputs.labels << {
+        x: 640,
+        y: 360,
+        size_px: 120,
+        alignment_enum: 1,
+        vertical_alignment_enum: 1,
+        text: "Level Completed!",
+        r: 255,
+        g: 255,
+        b: 255,
+      }
     end
   end
-end
 
-def calc(args)
-  y_before = args.state.hero.y
-  x_before = args.state.hero.x
-
-  args.state.hero.path = 'sprites/hero-flying.png'
-  args.state.hero.impulse *= IMPULSE_DECREASE
-  args.state.hero.y += FALL
-  args.state.hero.y += args.state.hero.impulse
-
-  if args.state.hero.moving == :left
-    args.state.hero.x -= RL_SPEED
-    args.state.hero.flip_horizontally = false
-  elsif args.state.hero.moving == :right
-    args.state.hero.x += RL_SPEED
-    args.state.hero.flip_horizontally = true
-  end
-
-  if args.state.hero.y - y_before < 0
-    ascending = false
-  else
-    ascending = true
-  end
-
-  if p = Geometry.find_intersect_rect(args.state.hero, args.state.platforms)
-    if (x_before + args.state.hero.w) < p.x
-      args.state.hero.x = x_before
-    elsif x_before >= (p.x + p.w)
-      args.state.hero.x = x_before
-    elsif ascending
-      args.state.hero.y = p.y - args.state.hero.h - 2
+  def input
+    if inputs.left
+      state.hero.moving = :left
+    elsif inputs.right
+      state.hero.moving = :right
     else
-      args.state.hero.path = 'sprites/hero-standing.png'
-      args.state.hero.y = p.y + p.h
+      state.hero.moving = :none
+    end
+
+    if inputs.keyboard.control || inputs.controller_one.y
+      if state.hero.jetpack_power > 0
+        state.hero.impulse = IMPULSE
+        state.hero.jetpack_power -= 0.1
+        audio[:jetpack] = { input: "sounds/jetpack.wav" } unless audio[:jetpack]
+      end
     end
   end
 
-  args.state.fuel.each do |f|
-    if args.state.hero.intersect_rect?(f)
-      args.state.hero.jetpack_power += 20
-      args.state.hero.jetpack_power = args.state.hero.jetpack_power.clamp(0, 100)
-      f.used = true
-      args.audio[:fuel] = { input: "sounds/fuel.mp3" }
+  def calc
+    calc_init
+    calc_hero_y_position
+    calc_directions
+    calc_platform_collisions
+    calc_picking_fuel
+    calc_picking_ore
+    calc_collecting_ore
+    calc_clamp
+  end
+
+  def calc_init
+    state.at_calc_start = {
+      x: state.hero.x,
+      y: state.hero.y,
+    }
+  end
+
+  def calc_hero_y_position
+    state.hero.impulse *= IMPULSE_DECREASE
+    state.hero.y += FALL
+    state.hero.y += state.hero.impulse
+  end
+
+  def calc_directions
+    if state.hero.moving == :left
+      state.hero.x -= RL_SPEED
+      state.hero.flip_horizontally = false
+    elsif state.hero.moving == :right
+      state.hero.x += RL_SPEED
+      state.hero.flip_horizontally = true
+    end
+    state.hero.ascending = state.hero.y - state.at_calc_start.y < 0 ? false : true
+  end
+
+  def calc_platform_collisions
+    state.hero.path = 'sprites/hero-flying.png'
+    if p = Geometry.find_intersect_rect(state.hero, state.platforms)
+      if (state.at_calc_start.x + state.hero.w) < p.x
+        state.hero.x = state.at_calc_start.x
+      elsif state.at_calc_start.x >= (p.x + p.w)
+        state.hero.x = state.at_calc_start.x
+      elsif state.hero.ascending
+        state.hero.y = p.y - state.hero.h - 2
+      else
+        state.hero.path = 'sprites/hero-standing.png'
+        state.hero.y = p.y + p.h
+      end
     end
   end
-  args.state.fuel.reject!(&:used)
 
-  args.state.ores.each do |o|
-    if args.state.hero.ore == 0 && args.state.hero.intersect_rect?(o)
-      o.used = true
-      args.state.hero.ore = 1
-      args.audio[:gold] = { input: "sounds/gold.wav" }
+  def calc_picking_fuel
+    state.fuel.each do |f|
+      if state.hero.intersect_rect?(f)
+        state.hero.jetpack_power += 20
+        state.hero.jetpack_power = state.hero.jetpack_power.clamp(0, 100)
+        f.used = true
+        audio[:fuel] = { input: "sounds/fuel.mp3" }
+      end
+    end
+    state.fuel.reject!(&:used)
+  end
+
+  def calc_picking_ore
+    state.ores.each do |o|
+      if state.hero.ore == 0 && state.hero.intersect_rect?(o)
+        o.used = true
+        state.hero.ore = 1
+        audio[:gold] = { input: "sounds/gold.wav" }
+      end
+    end
+    state.ores.reject!(&:used)
+  end
+
+  def calc_collecting_ore
+    if state.hero.ore == 1 && state.hero.intersect_rect?(state.collector)
+      state.hero.ore = 0
+      state.level.remaining_ores -= 1
+      state.level.completed = true if state.level.remaining_ores == 0
+      audio[:collect] = { input: "sounds/collect.wav" }
     end
   end
-  args.state.ores.reject!(&:used)
 
-  if args.state.hero.ore == 1 && args.state.hero.intersect_rect?(args.state.collector)
-    args.state.hero.ore = 0
-    args.state.level.remaining_ores -= 1
-    args.state.level.completed = true if args.state.level.remaining_ores == 0
-    args.audio[:collect] = { input: "sounds/collect.wav" }
+  def calc_clamp
+    state.hero.x = state.hero.x.clamp(0, Grid.w - state.hero.w)
+    state.hero.y = state.hero.y.clamp(0, Grid.h - state.hero.h)
   end
+end
 
-  args.state.hero.x = args.state.hero.x.clamp(0, Grid.w - args.state.hero.w)
-  args.state.hero.y = args.state.hero.y.clamp(0, Grid.h - args.state.hero.h)
+$game = Game.new
+
+def tick(args)
+  $game.args = args
+  $game.tick
 end
