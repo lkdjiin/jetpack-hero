@@ -115,6 +115,7 @@ def input(args)
     if args.state.hero.jetpack_power > 0
       args.state.hero.impulse = IMPULSE
       args.state.hero.jetpack_power -= 0.1
+      args.audio[:jetpack] = { input: "sounds/jetpack.wav" } unless args.audio[:jetpack]
     end
   end
 end
@@ -160,6 +161,7 @@ def calc(args)
       args.state.hero.jetpack_power += 20
       args.state.hero.jetpack_power = args.state.hero.jetpack_power.clamp(0, 100)
       f.used = true
+      args.audio[:fuel] = { input: "sounds/fuel.mp3" }
     end
   end
   args.state.fuel.reject!(&:used)
@@ -168,6 +170,7 @@ def calc(args)
     if args.state.hero.ore == 0 && args.state.hero.intersect_rect?(o)
       o.used = true
       args.state.hero.ore = 1
+      args.audio[:gold] = { input: "sounds/gold.wav" }
     end
   end
   args.state.ores.reject!(&:used)
@@ -176,6 +179,7 @@ def calc(args)
     args.state.hero.ore = 0
     args.state.level.remaining_ores -= 1
     args.state.level.completed = true if args.state.level.remaining_ores == 0
+    args.audio[:collect] = { input: "sounds/collect.wav" }
   end
 
   args.state.hero.x = args.state.hero.x.clamp(0, Grid.w - args.state.hero.w)
