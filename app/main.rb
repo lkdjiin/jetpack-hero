@@ -13,31 +13,50 @@ end
 
 def defaults(args)
   args.state.hero ||= {
-    x: 600,
-    y: 200,
+    x: 120,
+    y: 700,
     w: 7 * HERO_SCALE,
     h: 17 * HERO_SCALE,
     path: 'sprites/hero-flying.png',
-    flip_horizontally: false,
+    flip_horizontally: true,
     impulse: 0,
     moving: :none,
     jetpack_power: 100,
+    ore: 0,
   }
 
   args.state.platforms ||= [
     { x: 0, y: 570, w: 200, h: 12, path: 'sprites/tile.png' },
     { x: 400, y: 570, w: 700, h: 12, path: 'sprites/tile.png' },
+    { x: 1200, y: 570, w: 80, h: 12, path: 'sprites/tile.png' },
     { x: 0, y: 420, w: 200, h: 12, path: 'sprites/tile.png' },
     { x: 400, y: 420, w: 700, h: 12, path: 'sprites/tile.png' },
+    { x: 1200, y: 420, w: 80, h: 12, path: 'sprites/tile.png' },
     { x: 0, y: 270, w: 200, h: 12, path: 'sprites/tile.png' },
     { x: 400, y: 270, w: 700, h: 12, path: 'sprites/tile.png' },
+    { x: 1200, y: 270, w: 80, h: 12, path: 'sprites/tile.png' },
     { x: 0, y: 130, w: 1280, h: 12, path: 'sprites/tile.png' },
   ]
 
   args.state.fuel ||= [
-    { x:700, y: 432, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+    { x:700, y: 282, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
     { x:700, y: 582, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
   ]
+
+  args.state.ores ||= [
+    { x:1220, y: 282, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+    { x:800, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+    { x:1220, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+    { x:800, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+    { x:1220, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+  ]
+
+  args.state.collector ||= { x:0, y: 582, w: 80, h: 80, path: 'sprites/collector.png' }
+
+  args.state.level ||= {
+    remaining_ores: 5,
+    completed: false,
+  }
 end
 
 def render(args)
@@ -47,7 +66,16 @@ def render(args)
   args.outputs.solids << { x: 305, y: 54, w: args.state.hero.jetpack_power * 6, h: 27, r: 255, g: 255, b: 0 }
   args.outputs.sprites << args.state.platforms
   args.outputs.sprites << args.state.fuel
+  args.outputs.sprites << args.state.ores
+  if args.state.hero.ore == 1
+    args.outputs.sprites << {
+      x: args.state.hero.x,
+      y: args.state.hero.y,
+      w: 30, h: 40, path: 'sprites/gold.png'
+    }
+  end
   args.outputs.sprites << args.state.hero
+  args.outputs.sprites << args.state.collector
   args.outputs.labels << {
     x: 200,
     y: 45,
@@ -59,6 +87,19 @@ def render(args)
     g: 255,
     b: 255,
   }
+  if args.state.level.completed
+    args.outputs.labels << {
+      x: 640,
+      y: 360,
+      size_px: 120,
+      alignment_enum: 1,
+      vertical_alignment_enum: 1,
+      text: "Level Completed!",
+      r: 255,
+      g: 255,
+      b: 255,
+    }
+  end
 end
 
 def input(args)
@@ -122,6 +163,20 @@ def calc(args)
     end
   end
   args.state.fuel.reject!(&:used)
+
+  args.state.ores.each do |o|
+    if args.state.hero.ore == 0 && args.state.hero.intersect_rect?(o)
+      o.used = true
+      args.state.hero.ore = 1
+    end
+  end
+  args.state.ores.reject!(&:used)
+
+  if args.state.hero.ore == 1 && args.state.hero.intersect_rect?(args.state.collector)
+    args.state.hero.ore = 0
+    args.state.level.remaining_ores -= 1
+    args.state.level.completed = true if args.state.level.remaining_ores == 0
+  end
 
   args.state.hero.x = args.state.hero.x.clamp(0, Grid.w - args.state.hero.w)
   args.state.hero.y = args.state.hero.y.clamp(0, Grid.h - args.state.hero.h)
