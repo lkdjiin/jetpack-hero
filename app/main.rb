@@ -1,4 +1,5 @@
 HERO_SCALE = 4 # Image ratio
+ALIEN_SCALE = 1.5
 FALL = -1.8 # Kind of gravity
 RL_SPEED = 5 # Right/left speed
 IMPULSE = 4 # Jetpack power
@@ -61,6 +62,17 @@ class Game
       remaining_ores: 5,
       completed: false,
     }
+
+    state.aliens ||= []
+    state.aliens_apparition ||= []
+    state.aliens_pool ||= [
+      { x:400, y: 582, alive: false },
+      { x:80, y: 432, alive: false },
+      { x:700, y: 432, alive: false },
+      { x:80, y: 282, alive: false },
+      { x:900, y: 282, alive: false },
+      { x:600, y: 142, alive: false },
+    ]
   end
 
   def render
@@ -80,6 +92,8 @@ class Game
     end
     outputs.sprites << state.hero
     outputs.sprites << state.collector
+    outputs.sprites << state.aliens_apparition
+    outputs.sprites << state.aliens
     outputs.labels << {
       x: 200,
       y: 45,
@@ -126,6 +140,7 @@ class Game
 
   def calc
     calc_init
+    calc_aliens
     calc_hero_y_position
     calc_directions
     calc_platform_collisions
@@ -140,6 +155,36 @@ class Game
       x: state.hero.x,
       y: state.hero.y,
     }
+  end
+
+  def calc_aliens
+    state.aliens_pool.each do |alien|
+      if alien.alive == false && rand(1_000) == 0
+        alien.alive = true
+        state.aliens_apparition << {
+          x: alien.x, y: alien.y,
+          w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE,
+          start_looping_at: Kernel.tick_count,
+          finished: false,
+        }
+        break
+      end
+    end
+
+    state.aliens_apparition.each do |alien|
+      sprite_index = alien.start_looping_at.frame_index(10, 8, false)
+      if sprite_index
+        alien.path = "sprites/apparition-#{sprite_index}.png"
+      else
+        alien.finished = true
+        state.aliens << {
+          x: alien.x, y: alien.y,
+          w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE,
+          path: 'sprites/alien.png',
+        }
+      end
+    end
+    state.aliens_apparition.reject!(&:finished)
   end
 
   def calc_hero_y_position
