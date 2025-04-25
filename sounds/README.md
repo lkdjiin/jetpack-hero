@@ -17,3 +17,7 @@ Futuristic Collect Sound by Dishings -- https://freesound.org/s/752015/ -- Licen
 ## gold.wav
 
 CollectCoin.wav by bradwesson -- https://freesound.org/s/135936/ -- License: Attribution NonCommercial 4.0
+
+## laser.wav
+
+Laser04.wav by jeremysykes -- https://freesound.org/s/344513/ -- License: Creative Commons 0

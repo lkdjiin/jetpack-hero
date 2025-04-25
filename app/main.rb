@@ -4,6 +4,9 @@ FALL = -1.8 # Kind of gravity
 RL_SPEED = 5 # Right/left speed
 IMPULSE = 4 # Jetpack power
 IMPULSE_DECREASE = 0.9 # Jetpack power ratio decrease per frame
+LASER_SPEED = 5
+FIRE_RATE = 30 # Maximum is one shoot every FIRE_RATE frames
+LASER_ANIMATION = 10
 
 class Game
   attr_gtk
@@ -25,9 +28,12 @@ class Game
       flip_horizontally: true,
       impulse: 0,
       moving: :none,
+      facing: :right,
       jetpack_power: 100,
       ore: 0,
       ascending: false,
+      shooting: false,
+      last_shoot_at: 0,
     }
 
     state.platforms ||= [
@@ -73,6 +79,8 @@ class Game
       { x:900, y: 282, alive: false },
       { x:600, y: 142, alive: false },
     ]
+
+    state.shoots ||= []
   end
 
   def render
@@ -94,6 +102,7 @@ class Game
     outputs.sprites << state.collector
     outputs.sprites << state.aliens_apparition
     outputs.sprites << state.aliens
+    outputs.sprites << state.shoots
     outputs.labels << {
       x: 200,
       y: 45,
@@ -123,8 +132,10 @@ class Game
   def input
     if inputs.left
       state.hero.moving = :left
+      state.hero.facing = :left
     elsif inputs.right
       state.hero.moving = :right
+      state.hero.facing = :right
     else
       state.hero.moving = :none
     end
@@ -134,6 +145,13 @@ class Game
         state.hero.impulse = IMPULSE
         state.hero.jetpack_power -= 0.1
         audio[:jetpack] = { input: "sounds/jetpack.wav" } unless audio[:jetpack]
+      end
+    end
+
+    if inputs.keyboard.alt || inputs.controller_one.b
+      if state.hero.last_shoot_at + FIRE_RATE < Kernel.tick_count
+        state.hero.shooting = true
+        audio[:laser] = { input: 'sounds/laser.wav' }
       end
     end
   end
@@ -147,6 +165,7 @@ class Game
     calc_picking_fuel
     calc_picking_ore
     calc_collecting_ore
+    calc_shoot
     calc_clamp
   end
 
@@ -250,6 +269,35 @@ class Game
       state.level.completed = true if state.level.remaining_ores == 0
       audio[:collect] = { input: "sounds/collect.wav" }
     end
+  end
+
+  def calc_shoot
+    if state.hero.shooting
+      state.shoots << {
+        x: state.hero.x,
+        y: state.hero.y + 20,
+        w: 24,
+        h: 10,
+        path: 'sprites/laser.png',
+        dead: false,
+        speed: state.hero.facing == :right ? LASER_SPEED : -LASER_SPEED,
+        animation_counter: LASER_ANIMATION,
+        flip_vertically: false,
+      }
+      state.hero.shooting = false
+      state.hero.last_shoot_at = Kernel.tick_count
+    end
+
+    state.shoots.each do |shoot|
+      shoot.animation_counter -= 1
+      if shoot.animation_counter == 0
+        shoot.animation_counter = LASER_ANIMATION
+        shoot.flip_vertically = !shoot.flip_vertically
+      end
+      shoot.x += shoot.speed
+      shoot.dead = true if shoot.x > Grid.w || shoot.x < 0
+    end
+    state.shoots.reject!(&:dead)
   end
 
   def calc_clamp
