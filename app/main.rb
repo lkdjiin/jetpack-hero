@@ -4,12 +4,16 @@ FALL = -1.8 # Kind of gravity
 RL_SPEED = 5 # Right/left speed
 IMPULSE = 4 # Jetpack power
 IMPULSE_DECREASE = 0.9 # Jetpack power ratio decrease per frame
-LASER_SPEED = 5
+LASER_SPEED = 7
 FIRE_RATE = 30 # Maximum is one shoot every FIRE_RATE frames
 LASER_ANIMATION = 10
 
 class Game
   attr_gtk
+
+  def initialize
+    @game_over = false
+  end
 
   def tick
     defaults
@@ -72,12 +76,12 @@ class Game
     state.aliens ||= []
     state.aliens_apparition ||= []
     state.aliens_pool ||= [
-      { x:400, y: 582, alive: false },
-      { x:80, y: 432, alive: false },
-      { x:700, y: 432, alive: false },
-      { x:80, y: 282, alive: false },
-      { x:900, y: 282, alive: false },
-      { x:600, y: 142, alive: false },
+      { x:400, y: 582, alive: false, id: 0 },
+      { x:80, y: 432, alive: false, id: 1 },
+      { x:700, y: 432, alive: false, id: 2 },
+      { x:80, y: 282, alive: false, id: 3 },
+      { x:900, y: 282, alive: false, id: 4 },
+      { x:600, y: 142, alive: false, id: 5 },
     ]
 
     state.shoots ||= []
@@ -114,6 +118,7 @@ class Game
       g: 255,
       b: 255,
     }
+
     if state.level.completed
       outputs.labels << {
         x: 640,
@@ -122,6 +127,20 @@ class Game
         alignment_enum: 1,
         vertical_alignment_enum: 1,
         text: "Level Completed!",
+        r: 255,
+        g: 255,
+        b: 255,
+      }
+    end
+
+    if @game_over
+      outputs.labels << {
+        x: 640,
+        y: 360,
+        size_px: 200,
+        alignment_enum: 1,
+        vertical_alignment_enum: 1,
+        text: "GAME OVER",
         r: 255,
         g: 255,
         b: 255,
@@ -157,11 +176,14 @@ class Game
   end
 
   def calc
+    return if @game_over
+
     calc_init
     calc_aliens
     calc_hero_y_position
     calc_directions
-    calc_platform_collisions
+    calc_platform_collision
+    calc_alien_collision
     calc_picking_fuel
     calc_picking_ore
     calc_collecting_ore
@@ -185,6 +207,7 @@ class Game
           w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE,
           start_looping_at: Kernel.tick_count,
           finished: false,
+          id: alien.id,
         }
         break
       end
@@ -200,10 +223,14 @@ class Game
           x: alien.x, y: alien.y,
           w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE,
           path: 'sprites/alien.png',
+          dead: false,
+          id: alien.id,
         }
       end
     end
     state.aliens_apparition.reject!(&:finished)
+
+    state.aliens.reject!(&:dead)
   end
 
   def calc_hero_y_position
@@ -223,7 +250,7 @@ class Game
     state.hero.ascending = state.hero.y - state.at_calc_start.y < 0 ? false : true
   end
 
-  def calc_platform_collisions
+  def calc_platform_collision
     state.hero.path = 'sprites/hero-flying.png'
     if p = Geometry.find_intersect_rect(state.hero, state.platforms)
       if (state.at_calc_start.x + state.hero.w) < p.x
@@ -239,6 +266,12 @@ class Game
     end
   end
 
+  def calc_alien_collision
+    if a = Geometry.find_intersect_rect(state.hero, state.aliens)
+      @game_over = true
+    end
+  end
+
   def calc_picking_fuel
     state.fuel.each do |f|
       if state.hero.intersect_rect?(f)
@@ -246,6 +279,7 @@ class Game
         state.hero.jetpack_power = state.hero.jetpack_power.clamp(0, 100)
         f.used = true
         audio[:fuel] = { input: "sounds/fuel.mp3" }
+        break
       end
     end
     state.fuel.reject!(&:used)
@@ -257,6 +291,7 @@ class Game
         o.used = true
         state.hero.ore = 1
         audio[:gold] = { input: "sounds/gold.wav" }
+        break
       end
     end
     state.ores.reject!(&:used)
@@ -296,6 +331,14 @@ class Game
       end
       shoot.x += shoot.speed
       shoot.dead = true if shoot.x > Grid.w || shoot.x < 0
+
+      state.aliens.each do |a|
+        if shoot.intersect_rect?(a)
+          shoot.dead = true
+          a.dead = true
+          state.aliens_pool[a.id].alive = false
+        end
+      end
     end
     state.shoots.reject!(&:dead)
   end
