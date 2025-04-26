@@ -1,5 +1,7 @@
 HERO_SCALE = 4 # Image ratio
 ALIEN_SCALE = 1.5
+ALIEN_W  = 50 * ALIEN_SCALE
+ALIEN_H = 35 * ALIEN_SCALE
 FALL = -1.8 # Kind of gravity
 RL_SPEED = 5 # Right/left speed
 IMPULSE = 4 # Jetpack power
@@ -7,6 +9,7 @@ IMPULSE_DECREASE = 0.9 # Jetpack power ratio decrease per frame
 LASER_SPEED = 7
 FIRE_RATE = 30 # Maximum is one shoot every FIRE_RATE frames
 LASER_ANIMATION = 10
+
 
 class Game
   attr_gtk
@@ -54,9 +57,12 @@ class Game
     ]
 
     state.fuel ||= [
-      { x:700, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
-      { x:700, y: 282, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
-      { x:700, y: 582, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+      { x: 800, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+      { x: 700, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+      { x: 600, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+      { x: 700, y: 282, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+      { x: 700, y: 432, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+      { x: 700, y: 582, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
     ]
 
     state.ores ||= [
@@ -82,12 +88,13 @@ class Game
     state.aliens ||= []
     state.aliens_apparition ||= []
     state.aliens_pool ||= [
-      { x:400, y: 582, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 0 },
-      { x:80, y: 432, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 1 },
-      { x:700, y: 432, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 2 },
-      { x:80, y: 282, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 3 },
-      { x:900, y: 282, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 4 },
-      { x:600, y: 142, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 5 },
+      { x: 420, y: 582, w: ALIEN_W, h: ALIEN_H, alive: false, id: 0, speed: 2, x_min: 410, x_max: 1_000 },
+      { x: 80, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 1, speed: 0.8, x_min: 50, x_max: 120 },
+      { x: 700, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 2, speed: -1.8, x_min: 410, x_max: 1_000 },
+      { x: 80, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 3, speed: 0.7, x_min: 50, x_max: 120 },
+      { x: 900, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 4, speed: 1.7, x_min: 410, x_max: 1_000 },
+      { x: 200, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: 2, x_min: 50, x_max: 1_200 },
+      { x: 900, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: -2, x_min: 50, x_max: 1_200 },
     ]
 
     state.shoots ||= []
@@ -206,7 +213,7 @@ class Game
 
   def calc_aliens
     state.aliens_pool.each do |alien|
-      if alien.alive == false && rand(1_000) == 0
+      if alien.alive == false && rand(700) == 0
         alien.alive = true
         state.aliens_apparition << alien.dup.merge({
           start_looping_at: Kernel.tick_count,
@@ -230,6 +237,12 @@ class Game
     end
     state.aliens_apparition.reject!(&:finished)
 
+    state.aliens.each do |alien|
+      alien.x += alien.speed
+      if alien.x <= alien.x_min || alien.x >= alien.x_max
+        alien.speed = -alien.speed
+      end
+    end
     state.aliens.reject!(&:dead)
   end
 
