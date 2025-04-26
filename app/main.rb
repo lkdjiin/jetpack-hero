@@ -54,34 +54,40 @@ class Game
     ]
 
     state.fuel ||= [
+      { x:700, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
       { x:700, y: 282, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
       { x:700, y: 582, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
     ]
 
     state.ores ||= [
       { x:1220, y: 282, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      { x:500, y: 282, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      { x:10, y: 282, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      { x:10, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
       { x:800, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
       { x:1220, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
       { x:800, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
       { x:1220, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      { x:10, y: 142, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      { x:1220, y: 142, w: 30, h: 27, path: 'sprites/gold.png', used: false },
     ]
 
     state.collector ||= { x:0, y: 582, w: 80, h: 80, path: 'sprites/collector.png' }
 
     state.level ||= {
-      remaining_ores: 5,
+      remaining_ores: 10,
       completed: false,
     }
 
     state.aliens ||= []
     state.aliens_apparition ||= []
     state.aliens_pool ||= [
-      { x:400, y: 582, alive: false, id: 0 },
-      { x:80, y: 432, alive: false, id: 1 },
-      { x:700, y: 432, alive: false, id: 2 },
-      { x:80, y: 282, alive: false, id: 3 },
-      { x:900, y: 282, alive: false, id: 4 },
-      { x:600, y: 142, alive: false, id: 5 },
+      { x:400, y: 582, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 0 },
+      { x:80, y: 432, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 1 },
+      { x:700, y: 432, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 2 },
+      { x:80, y: 282, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 3 },
+      { x:900, y: 282, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 4 },
+      { x:600, y: 142, w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE, alive: false, id: 5 },
     ]
 
     state.shoots ||= []
@@ -202,13 +208,10 @@ class Game
     state.aliens_pool.each do |alien|
       if alien.alive == false && rand(1_000) == 0
         alien.alive = true
-        state.aliens_apparition << {
-          x: alien.x, y: alien.y,
-          w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE,
+        state.aliens_apparition << alien.dup.merge({
           start_looping_at: Kernel.tick_count,
           finished: false,
-          id: alien.id,
-        }
+        })
         break
       end
     end
@@ -219,13 +222,10 @@ class Game
         alien.path = "sprites/apparition-#{sprite_index}.png"
       else
         alien.finished = true
-        state.aliens << {
-          x: alien.x, y: alien.y,
-          w: 50 * ALIEN_SCALE, h: 35 * ALIEN_SCALE,
+        state.aliens << alien.dup.merge({
           path: 'sprites/alien.png',
           dead: false,
-          id: alien.id,
-        }
+        })
       end
     end
     state.aliens_apparition.reject!(&:finished)
