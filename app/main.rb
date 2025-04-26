@@ -9,6 +9,7 @@ IMPULSE_DECREASE = 0.9 # Jetpack power ratio decrease per frame
 LASER_SPEED = 7
 FIRE_RATE = 30 # Maximum is one shoot every FIRE_RATE frames
 LASER_ANIMATION = 10
+ALIEN_ANIMATION = 15
 
 
 class Game
@@ -257,6 +258,8 @@ class Game
         state.aliens << alien.dup.merge({
           path: 'sprites/alien.png',
           dead: false,
+          flip_horizontally: false,
+          animation_counter: ALIEN_ANIMATION,
         })
       end
     end
@@ -266,6 +269,11 @@ class Game
       alien.x += alien.speed
       if alien.x <= alien.x_min || alien.x >= alien.x_max
         alien.speed = -alien.speed
+      end
+      alien.animation_counter -= 1
+      if alien.animation_counter == 0
+        alien.animation_counter = ALIEN_ANIMATION
+        alien.flip_horizontally = !alien.flip_horizontally
       end
     end
     state.aliens.reject!(&:dead)
