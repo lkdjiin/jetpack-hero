@@ -116,6 +116,7 @@ class Game
       }
     end
     outputs.sprites << state.hero
+    render_jetpack_flame
     outputs.sprites << state.collector
     outputs.sprites << state.aliens_apparition
     outputs.sprites << state.aliens
@@ -159,6 +160,30 @@ class Game
         b: 255,
       }
     end
+  end
+
+  def render_jetpack_flame
+    return if state.hero.impulse < 0.2
+
+    flame = {
+      x: state.hero.facing == :left ? state.hero.x + 14 : state.hero.x - 1,
+      y: state.hero.y - 15,
+      w: 16, h: 40
+    }
+
+    if state.hero.impulse > 3
+      flame.merge!({ path: 'sprites/flame-0.png'})
+    elsif state.hero.impulse > 2
+      flame.merge!({ path: 'sprites/flame-1.png'})
+    elsif state.hero.impulse > 1
+      flame.merge!({ path: 'sprites/flame-2.png'})
+    elsif state.hero.impulse > 0.6
+      flame.merge!({ path: 'sprites/flame-3.png'})
+    elsif state.hero.impulse > 0.2
+      flame.merge!({ path: 'sprites/flame-4.png'})
+    end
+
+    outputs.sprites << flame
   end
 
   def input
@@ -248,6 +273,7 @@ class Game
 
   def calc_hero_y_position
     state.hero.impulse *= IMPULSE_DECREASE
+    state.hero.impulse = 0 if state.hero.impulse < 0.1
     state.hero.y += FALL
     state.hero.y += state.hero.impulse
   end
