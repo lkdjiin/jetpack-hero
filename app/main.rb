@@ -88,6 +88,7 @@ class Game
 
     state.aliens ||= []
     state.aliens_apparition ||= []
+    state.aliens_disparition ||= []
     state.aliens_pool ||= [
       { x: 420, y: 582, w: ALIEN_W, h: ALIEN_H, alive: false, id: 0, speed: 2, x_min: 410, x_max: 1_000 },
       { x: 80, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 1, speed: 0.8, x_min: 50, x_max: 120 },
@@ -121,6 +122,7 @@ class Game
     outputs.sprites << state.collector
     outputs.sprites << state.aliens_apparition
     outputs.sprites << state.aliens
+    outputs.sprites << state.aliens_disparition
     outputs.sprites << state.shoots
     outputs.labels << {
       x: 200,
@@ -266,6 +268,15 @@ class Game
     state.aliens_apparition.reject!(&:finished)
 
     state.aliens.each do |alien|
+      if alien.dead
+        state.aliens_disparition << alien.dup.merge({
+          start_looping_at: Kernel.tick_count,
+          finished: false,
+        })
+        audio[:explosion] = { input: "sounds/explosion.wav" }
+        next
+      end
+
       alien.x += alien.speed
       if alien.x <= alien.x_min || alien.x >= alien.x_max
         alien.speed = -alien.speed
@@ -277,6 +288,17 @@ class Game
       end
     end
     state.aliens.reject!(&:dead)
+
+    state.aliens_disparition.each do |alien|
+      sprite_index = alien.start_looping_at.frame_index(7, 8, false)
+      if sprite_index
+        alien.path = "sprites/disparition-#{sprite_index}.png"
+      else
+        alien.finished = true
+        state.aliens_pool[alien.id].alive = false
+      end
+    end
+    state.aliens_disparition.reject!(&:finished)
   end
 
   def calc_hero_y_position
@@ -383,7 +405,6 @@ class Game
         if shoot.intersect_rect?(a)
           shoot.dead = true
           a.dead = true
-          state.aliens_pool[a.id].alive = false
         end
       end
     end

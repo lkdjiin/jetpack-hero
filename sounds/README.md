@@ -21,3 +21,7 @@ CollectCoin.wav by bradwesson -- https://freesound.org/s/135936/ -- License: Att
 ## laser.wav
 
 Laser04.wav by jeremysykes -- https://freesound.org/s/344513/ -- License: Creative Commons 0
+
+## explosion.wav
+
+Explosion 8 bit by Mrthenoronha -- https://freesound.org/s/397702/ -- License: Attribution NonCommercial 4.0
