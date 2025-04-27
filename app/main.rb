@@ -320,7 +320,9 @@ class Game
   end
 
   def calc_platform_collision
-    state.hero.path = 'sprites/hero-flying.png'
+    sprite_index = 0.frame_index(2, 9, true)
+    state.hero.path = "sprites/hero-flying-#{sprite_index}.png"
+
     if p = Geometry.find_intersect_rect(state.hero, state.platforms)
       if (state.at_calc_start.x + state.hero.w) < p.x
         state.hero.x = state.at_calc_start.x
