@@ -32,7 +32,7 @@ class Game
       y: 700,
       w: 7 * HERO_SCALE,
       h: 17 * HERO_SCALE,
-      path: 'sprites/hero-flying.png',
+      path: 'sprites/hero-flying-0.png',
       flip_horizontally: true,
       impulse: 0,
       moving: :none,
@@ -333,6 +333,10 @@ class Game
       else
         state.hero.path = 'sprites/hero-standing.png'
         state.hero.y = p.y + p.h
+        if state.hero.moving != :none
+          sprite_index = 0.frame_index(8, 5, true)
+          state.hero.path = "sprites/hero-running-#{sprite_index}.png"
+        end
       end
     end
   end
