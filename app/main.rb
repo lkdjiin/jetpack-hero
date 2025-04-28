@@ -229,6 +229,7 @@ class Game
     calc_picking_ore
     calc_collecting_ore
     calc_shoot
+    calc_fuel
     calc_clamp
   end
 
@@ -413,8 +414,36 @@ class Game
           a.dead = true
         end
       end
+
+      state.fuel.each do |f|
+        if shoot.intersect_rect?(f)
+          shoot.dead = true
+          f.dead = true
+          f.start_looping_at = Kernel.tick_count
+
+          # Adjust size and position for the (future) new sprite
+          f.w = 96
+          f.h = 128
+          f.x -= 36.5
+
+          audio[:explosion_fuel] = { input: "sounds/explosion2.wav" }
+        end
+      end
     end
     state.shoots.reject!(&:dead)
+  end
+
+  def calc_fuel
+    state.fuel.each do |f|
+      if f.dead
+        sprite_index = f.start_looping_at.frame_index(9, 8, false)
+        if sprite_index
+          f.path = "sprites/explosion-#{sprite_index}.png"
+        else
+          f.used = true
+        end
+      end
+    end
   end
 
   def calc_clamp
