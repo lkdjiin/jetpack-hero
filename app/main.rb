@@ -17,6 +17,7 @@ class Game
 
   def initialize
     @game_over = false
+    @score = 0
   end
 
   def tick
@@ -105,8 +106,8 @@ class Game
   def render
     outputs.solids << { x: 0, y: 130, w: 1280, h: 610, r: 0, g: 0, b: 0 }
     outputs.solids << { x: 0, y: 0, w: 1280, h: 130, r: 60, g: 60, b: 70 }
-    outputs.solids << { x: 305, y: 54, w: 600, h: 27, r: 255, g: 0, b: 0 }
-    outputs.solids << { x: 305, y: 54, w: state.hero.jetpack_power * 6, h: 27, r: 255, g: 255, b: 0 }
+    outputs.solids << { x: 305, y: 74, w: 600, h: 27, r: 255, g: 0, b: 0 }
+    outputs.solids << { x: 305, y: 74, w: state.hero.jetpack_power * 6, h: 27, r: 255, g: 255, b: 0 }
     outputs.sprites << state.platforms
     outputs.sprites << state.fuel
     outputs.sprites << state.ores
@@ -126,11 +127,22 @@ class Game
     outputs.sprites << state.shoots
     outputs.labels << {
       x: 200,
-      y: 45,
+      y: 65,
       size_px: 40,
       alignment_enum: 0,
       vertical_alignment_enum: 0,
       text: "POWER",
+      r: 255,
+      g: 255,
+      b: 255,
+    }
+    outputs.labels << {
+      x: 900,
+      y: 10,
+      size_px: 55,
+      alignment_enum: 2,
+      vertical_alignment_enum: 0,
+      text: @score,
       r: 255,
       g: 255,
       b: 255,
@@ -245,6 +257,7 @@ class Game
       if alien.alive == false && rand(700) == 0
         alien.alive = true
         state.aliens_apparition << alien.dup.merge({
+          x: rand(alien.x_max - alien.x_min) + alien.x_min,
           start_looping_at: Kernel.tick_count,
           finished: false,
         })
@@ -275,6 +288,7 @@ class Game
           finished: false,
         })
         audio[:explosion] = { input: "sounds/explosion.wav" }
+        @score += 100
         next
       end
 
@@ -355,6 +369,7 @@ class Game
         state.hero.jetpack_power = state.hero.jetpack_power.clamp(0, 100)
         f.used = true
         audio[:fuel] = { input: "sounds/fuel.mp3" }
+        @score += 10
         break
       end
     end
@@ -367,6 +382,7 @@ class Game
         o.used = true
         state.hero.ore = 1
         audio[:gold] = { input: "sounds/gold.wav" }
+        @score += 50
         break
       end
     end
@@ -379,6 +395,7 @@ class Game
       state.level.remaining_ores -= 1
       state.level.completed = true if state.level.remaining_ores == 0
       audio[:collect] = { input: "sounds/collect.wav" }
+      @score += 1_000
     end
   end
 
