@@ -25,3 +25,7 @@ Laser04.wav by jeremysykes -- https://freesound.org/s/344513/ -- License: Creati
 ## explosion.wav
 
 Explosion 8 bit by Mrthenoronha -- https://freesound.org/s/397702/ -- License: Attribution NonCommercial 4.0
+
+## game-over.wav
+
+Lose_C_04 by cabled_mess -- https://freesound.org/s/350988/ -- License: Creative Commons 0

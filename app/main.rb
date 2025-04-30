@@ -18,6 +18,7 @@ class Game
   def initialize
     @game_over = false
     @score = 0
+    @lives = 3
   end
 
   def tick
@@ -147,6 +148,16 @@ class Game
       g: 255,
       b: 255,
     }
+
+    @lives.times do |i|
+      outputs.sprites << {
+        x: 1_000 + i * 80,
+        y: 50,
+        w: 7 * 3,
+        h: 17 * 3,
+        path: 'sprites/hero-flying-0.png'
+      }
+    end
 
     if state.level.completed
       outputs.labels << {
@@ -358,7 +369,15 @@ class Game
 
   def calc_alien_collision
     if a = Geometry.find_intersect_rect(state.hero, state.aliens)
-      @game_over = true
+      @lives -= 1
+      if @lives == 0
+        @game_over = true
+        audio[:game_over] = { input: "sounds/game-over.wav" }
+        return
+      end
+      audio[:live_down] = { input: "sounds/life-lost.wav" }
+      state.hero.x = 120
+      state.hero.y = 700
     end
   end
 
