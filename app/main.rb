@@ -2,9 +2,9 @@ HERO_SCALE = 4 # Image ratio
 ALIEN_SCALE = 1.5
 ALIEN_W  = 50 * ALIEN_SCALE
 ALIEN_H = 35 * ALIEN_SCALE
-FALL = -1.8 # Kind of gravity
+FALL = -2.8 # Kind of gravity
 RL_SPEED = 5 # Right/left speed
-IMPULSE = 4 # Jetpack power
+IMPULSE = 8 # Jetpack power
 IMPULSE_DECREASE = 0.9 # Jetpack power ratio decrease per frame
 LASER_SPEED = 7
 FIRE_RATE = 30 # Maximum is one shoot every FIRE_RATE frames
@@ -86,19 +86,20 @@ class Game
     state.level ||= {
       remaining_ores: 10,
       completed: false,
+      time: 60,
     }
 
     state.aliens ||= []
     state.aliens_apparition ||= []
     state.aliens_disparition ||= []
     state.aliens_pool ||= [
-      { x: 420, y: 582, w: ALIEN_W, h: ALIEN_H, alive: false, id: 0, speed: 2, x_min: 410, x_max: 1_000 },
-      { x: 80, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 1, speed: 0.8, x_min: 50, x_max: 120 },
+      { x: 420, y: 582, w: ALIEN_W, h: ALIEN_H, alive: false, id: 0, speed: 3, x_min: 410, x_max: 1_000 },
+      { x: 80, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 1, speed: 1.8, x_min: 50, x_max: 120 },
       { x: 700, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 2, speed: -1.8, x_min: 410, x_max: 1_000 },
-      { x: 80, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 3, speed: 0.7, x_min: 50, x_max: 120 },
+      { x: 80, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 3, speed: 1.7, x_min: 50, x_max: 120 },
       { x: 900, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 4, speed: 1.7, x_min: 410, x_max: 1_000 },
-      { x: 200, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: 2, x_min: 50, x_max: 1_200 },
-      { x: 900, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: -2, x_min: 50, x_max: 1_200 },
+      { x: 200, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: 3.5, x_min: 50, x_max: 1_200 },
+      { x: 900, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: -2.9, x_min: 50, x_max: 1_200 },
     ]
 
     state.shoots ||= []
@@ -186,6 +187,16 @@ class Game
         b: 255,
       }
     end
+
+    outputs.labels << {
+      x: 40,
+      y: 110,
+      size_px: 70,
+      text: state.level.time,
+      r: 255,
+      g: 255,
+      b: 255,
+    }
   end
 
   def render_jetpack_flame
@@ -226,7 +237,7 @@ class Game
     if inputs.keyboard.control || inputs.controller_one.y
       if state.hero.jetpack_power > 0
         state.hero.impulse = IMPULSE
-        state.hero.jetpack_power -= 0.1
+        state.hero.jetpack_power -= 0.2
         audio[:jetpack] = { input: "sounds/jetpack.wav" } unless audio[:jetpack]
       end
     end
@@ -243,6 +254,7 @@ class Game
     return if @game_over
 
     calc_init
+    calc_level
     calc_aliens
     calc_hero_y_position
     calc_directions
@@ -261,6 +273,17 @@ class Game
       x: state.hero.x,
       y: state.hero.y,
     }
+  end
+
+  def calc_level
+    if Kernel.tick_count % 60 == 0
+      state.level.time -= 1
+      audio[:time] = { input: "sounds/time.wav" } if state.level.time <= 10
+      if state.level.time == 0
+        state.level.time = 60
+        life_lost
+      end
+    end
   end
 
   def calc_aliens
@@ -369,16 +392,20 @@ class Game
 
   def calc_alien_collision
     if a = Geometry.find_intersect_rect(state.hero, state.aliens)
-      @lives -= 1
-      if @lives == 0
-        @game_over = true
-        audio[:game_over] = { input: "sounds/game-over.wav" }
-        return
-      end
-      audio[:live_down] = { input: "sounds/life-lost.wav" }
-      state.hero.x = 120
-      state.hero.y = 700
+      life_lost
     end
+  end
+
+  def life_lost
+    @lives -= 1
+    if @lives == 0
+      @game_over = true
+      audio[:game_over] = { input: "sounds/game-over.wav" }
+      return
+    end
+    audio[:live_down] = { input: "sounds/life-lost.wav" }
+    state.hero.x = 120
+    state.hero.y = 700
   end
 
   def calc_picking_fuel
