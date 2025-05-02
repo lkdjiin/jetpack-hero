@@ -64,7 +64,7 @@ class Game
       { x: 0, y: 130, w: 1280, h: 12, path: 'sprites/tile.png' },
     ]
 
-    state.fuel ||= [
+    state.fuels ||= [
       { x: 800, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
       { x: 700, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
       { x: 600, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
@@ -112,7 +112,7 @@ class Game
     outputs.solids << { x: 305, y: 74, w: 600, h: 27, r: 255, g: 0, b: 0 }
     outputs.solids << { x: 305, y: 74, w: state.hero.jetpack_power * 6, h: 27, r: 255, g: 255, b: 0 }
     outputs.sprites << state.platforms
-    outputs.sprites << state.fuel
+    outputs.sprites << state.fuels
     outputs.sprites << state.ores
     if state.hero.ore == 1
       outputs.sprites << {
@@ -386,7 +386,7 @@ class Game
   end
 
   def calc_picking_fuel
-    state.fuel.each do |f|
+    state.fuels.each do |f|
       if state.hero.intersect_rect?(f)
         state.hero.jetpack_power += 20
         state.hero.jetpack_power = state.hero.jetpack_power.clamp(0, 100)
@@ -396,7 +396,7 @@ class Game
         break
       end
     end
-    state.fuel.reject!(&:used)
+    state.fuels.reject!(&:used)
   end
 
   def calc_picking_ore
@@ -454,7 +454,7 @@ class Game
         end
       end
 
-      state.fuel.each do |f|
+      state.fuels.each do |f|
         break if FuelAndShotCollision.detect(@args, f, shot)
       end
     end
@@ -462,7 +462,7 @@ class Game
   end
 
   def calc_fuel
-    state.fuel.each do |f|
+    state.fuels.each do |f|
       if f.dead
         sprite_index = f.start_looping_at.frame_index(9, 8, false)
         if sprite_index
