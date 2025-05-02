@@ -13,7 +13,11 @@ ALIEN_ANIMATION = 15
 
 require 'app/level.rb'
 require 'app/collector.rb'
+require 'app/fuel.rb'
+require 'app/ore.rb'
 require 'app/fuel_and_shot_collision.rb'
+require 'app/hero_and_fuel_collision.rb'
+require 'app/hero_and_ore_collision.rb'
 
 class Game
   attr_gtk
@@ -65,25 +69,26 @@ class Game
     ]
 
     state.fuels ||= [
-      { x: 800, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
-      { x: 700, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
-      { x: 600, y: 142, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
-      { x: 700, y: 282, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
-      { x: 700, y: 432, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
-      { x: 700, y: 582, w: 25, h: 30, path: 'sprites/fuel.png', used: false },
+      Fuel.new(x: 800, y: 142),
+      Fuel.new(x: 700, y: 142),
+      Fuel.new(x: 600, y: 142),
+      Fuel.new(x: 700, y: 282),
+      Fuel.new(x: 700, y: 432),
+      Fuel.new(x: 700, y: 582),
     ]
 
     state.ores ||= [
-      { x:1220, y: 282, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-      { x:500, y: 282, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-      { x:10, y: 282, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-      { x:10, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-      { x:800, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-      { x:1220, y: 432, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-      { x:800, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-      { x:1220, y: 582, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-      { x:10, y: 142, w: 30, h: 27, path: 'sprites/gold.png', used: false },
-      { x:1220, y: 142, w: 30, h: 27, path: 'sprites/gold.png', used: false },
+      Ore.new(x: 1220, y: 282),
+      Ore.new(x: 1220, y: 282),
+      Ore.new(x: 500, y: 282),
+      Ore.new(x: 10, y: 282),
+      Ore.new(x: 10, y: 432),
+      Ore.new(x: 800, y: 432),
+      Ore.new(x: 1220, y: 432),
+      Ore.new(x: 800, y: 582),
+      Ore.new(x: 1220, y: 582),
+      Ore.new(x: 10, y: 142),
+      Ore.new(x: 1220, y: 142),
     ]
 
     state.collector ||= Collector.new(@args)
@@ -387,10 +392,7 @@ class Game
 
   def calc_picking_fuel
     state.fuels.each do |f|
-      if state.hero.intersect_rect?(f)
-        state.hero.jetpack_power += 20
-        state.hero.jetpack_power = state.hero.jetpack_power.clamp(0, 100)
-        f.used = true
+      if HeroAndFuelCollision.detect(state.hero, f)
         audio[:fuel] = { input: "sounds/fuel.mp3" }
         @score += 10
         break
@@ -401,9 +403,7 @@ class Game
 
   def calc_picking_ore
     state.ores.each do |o|
-      if state.hero.ore == 0 && state.hero.intersect_rect?(o)
-        o.used = true
-        state.hero.ore = 1
+      if HeroAndOreCollision.detect(state.hero, o)
         audio[:gold] = { input: "sounds/gold.wav" }
         @score += 50
         break
@@ -455,23 +455,17 @@ class Game
       end
 
       state.fuels.each do |f|
-        break if FuelAndShotCollision.detect(@args, f, shot)
+        if FuelAndShotCollision.detect(f, shot)
+          args.audio[:explosion_fuel] = { input: "sounds/explosion2.wav" }
+          break
+        end
       end
     end
     state.shots.reject!(&:dead)
   end
 
   def calc_fuel
-    state.fuels.each do |f|
-      if f.dead
-        sprite_index = f.start_looping_at.frame_index(9, 8, false)
-        if sprite_index
-          f.path = "sprites/explosion-#{sprite_index}.png"
-        else
-          f.used = true
-        end
-      end
-    end
+    state.fuels.each(&:calc)
   end
 
   def calc_clamp
