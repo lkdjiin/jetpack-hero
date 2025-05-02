@@ -7,7 +7,7 @@ RL_SPEED = 5 # Right/left speed
 IMPULSE = 8 # Jetpack power
 IMPULSE_DECREASE = 0.9 # Jetpack power ratio decrease per frame
 LASER_SPEED = 7
-FIRE_RATE = 30 # Maximum is one shoot every FIRE_RATE frames
+FIRE_RATE = 30 # Maximum is one shot every FIRE_RATE frames
 LASER_ANIMATION = 10
 ALIEN_ANIMATION = 15
 
@@ -43,7 +43,7 @@ class Game
       ore: 0,
       ascending: false,
       shooting: false,
-      last_shoot_at: 0,
+      last_shot_at: 0,
     }
 
     state.platforms ||= [
@@ -102,7 +102,7 @@ class Game
       { x: 900, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: -2.9, x_min: 50, x_max: 1_200 },
     ]
 
-    state.shoots ||= []
+    state.shots ||= []
   end
 
   def render
@@ -126,7 +126,7 @@ class Game
     outputs.sprites << state.aliens_apparition
     outputs.sprites << state.aliens
     outputs.sprites << state.aliens_disparition
-    outputs.sprites << state.shoots
+    outputs.sprites << state.shots
     outputs.labels << {
       x: 200,
       y: 65,
@@ -243,7 +243,7 @@ class Game
     end
 
     if inputs.keyboard.alt || inputs.controller_one.b
-      if state.hero.last_shoot_at + FIRE_RATE < Kernel.tick_count
+      if state.hero.last_shot_at + FIRE_RATE < Kernel.tick_count
         state.hero.shooting = true
         audio[:laser] = { input: 'sounds/laser.wav' }
       end
@@ -263,7 +263,7 @@ class Game
     calc_picking_fuel
     calc_picking_ore
     calc_collecting_ore
-    calc_shoot
+    calc_shot
     calc_fuel
     calc_clamp
   end
@@ -445,9 +445,9 @@ class Game
     end
   end
 
-  def calc_shoot
+  def calc_shot
     if state.hero.shooting
-      state.shoots << {
+      state.shots << {
         x: state.hero.x,
         y: state.hero.y + 20,
         w: 24,
@@ -459,28 +459,28 @@ class Game
         flip_vertically: false,
       }
       state.hero.shooting = false
-      state.hero.last_shoot_at = Kernel.tick_count
+      state.hero.last_shot_at = Kernel.tick_count
     end
 
-    state.shoots.each do |shoot|
-      shoot.animation_counter -= 1
-      if shoot.animation_counter == 0
-        shoot.animation_counter = LASER_ANIMATION
-        shoot.flip_vertically = !shoot.flip_vertically
+    state.shots.each do |shot|
+      shot.animation_counter -= 1
+      if shot.animation_counter == 0
+        shot.animation_counter = LASER_ANIMATION
+        shot.flip_vertically = !shot.flip_vertically
       end
-      shoot.x += shoot.speed
-      shoot.dead = true if shoot.x > Grid.w || shoot.x < 0
+      shot.x += shot.speed
+      shot.dead = true if shot.x > Grid.w || shot.x < 0
 
       state.aliens.each do |a|
-        if shoot.intersect_rect?(a)
-          shoot.dead = true
+        if shot.intersect_rect?(a)
+          shot.dead = true
           a.dead = true
         end
       end
 
       state.fuel.each do |f|
-        if shoot.intersect_rect?(f)
-          shoot.dead = true
+        if shot.intersect_rect?(f)
+          shot.dead = true
           f.dead = true
           f.start_looping_at = Kernel.tick_count
 
@@ -493,7 +493,7 @@ class Game
         end
       end
     end
-    state.shoots.reject!(&:dead)
+    state.shots.reject!(&:dead)
   end
 
   def calc_fuel
