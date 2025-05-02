@@ -11,6 +11,9 @@ FIRE_RATE = 30 # Maximum is one shot every FIRE_RATE frames
 LASER_ANIMATION = 10
 ALIEN_ANIMATION = 15
 
+require 'app/level.rb'
+require 'app/collector.rb'
+require 'app/fuel_and_shot_collision.rb'
 
 class Game
   attr_gtk
@@ -29,6 +32,8 @@ class Game
   end
 
   def defaults
+    return if Kernel.tick_count > 0
+
     state.hero ||= {
       x: 120,
       y: 700,
@@ -81,13 +86,9 @@ class Game
       { x:1220, y: 142, w: 30, h: 27, path: 'sprites/gold.png', used: false },
     ]
 
-    state.collector ||= { x:0, y: 582, w: 80, h: 80, path: 'sprites/collector.png' }
+    state.collector ||= Collector.new(@args)
 
-    state.level ||= {
-      remaining_ores: 10,
-      completed: false,
-      time: 60,
-    }
+    state.level ||=  Level.new(@args)
 
     state.aliens ||= []
     state.aliens_apparition ||= []
@@ -122,7 +123,7 @@ class Game
     end
     outputs.sprites << state.hero
     render_jetpack_flame
-    outputs.sprites << state.collector
+    state.collector.render
     outputs.sprites << state.aliens_apparition
     outputs.sprites << state.aliens
     outputs.sprites << state.aliens_disparition
@@ -160,20 +161,6 @@ class Game
       }
     end
 
-    if state.level.completed
-      outputs.labels << {
-        x: 640,
-        y: 360,
-        size_px: 120,
-        alignment_enum: 1,
-        vertical_alignment_enum: 1,
-        text: "Level Completed!",
-        r: 255,
-        g: 255,
-        b: 255,
-      }
-    end
-
     if @game_over
       outputs.labels << {
         x: 640,
@@ -188,15 +175,7 @@ class Game
       }
     end
 
-    outputs.labels << {
-      x: 40,
-      y: 110,
-      size_px: 70,
-      text: state.level.time,
-      r: 255,
-      g: 255,
-      b: 255,
-    }
+    state.level.render
   end
 
   def render_jetpack_flame
@@ -276,13 +255,11 @@ class Game
   end
 
   def calc_level
-    if Kernel.tick_count % 60 == 0
-      state.level.time -= 1
-      audio[:time] = { input: "sounds/time.wav" } if state.level.time <= 10
-      if state.level.time == 0
-        state.level.time = 60
-        life_lost
-      end
+    state.level.calc
+
+    if state.level.time_is_up?
+      state.level.reset_time
+      life_lost
     end
   end
 
@@ -438,8 +415,7 @@ class Game
   def calc_collecting_ore
     if state.hero.ore == 1 && state.hero.intersect_rect?(state.collector)
       state.hero.ore = 0
-      state.level.remaining_ores -= 1
-      state.level.completed = true if state.level.remaining_ores == 0
+      state.level.collect_one_ore
       audio[:collect] = { input: "sounds/collect.wav" }
       @score += 1_000
     end
@@ -479,18 +455,7 @@ class Game
       end
 
       state.fuel.each do |f|
-        if shot.intersect_rect?(f)
-          shot.dead = true
-          f.dead = true
-          f.start_looping_at = Kernel.tick_count
-
-          # Adjust size and position for the (future) new sprite
-          f.w = 96
-          f.h = 128
-          f.x -= 36.5
-
-          audio[:explosion_fuel] = { input: "sounds/explosion2.wav" }
-        end
+        break if FuelAndShotCollision.detect(@args, f, shot)
       end
     end
     state.shots.reject!(&:dead)
