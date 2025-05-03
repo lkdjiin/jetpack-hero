@@ -18,14 +18,13 @@ require 'app/ore.rb'
 require 'app/fuel_and_shot_collision.rb'
 require 'app/hero_and_fuel_collision.rb'
 require 'app/hero_and_ore_collision.rb'
+require 'app/info_zone.rb'
 
 class Game
   attr_gtk
 
   def initialize
     @game_over = false
-    @score = 0
-    @lives = 3
   end
 
   def tick
@@ -109,13 +108,15 @@ class Game
     ]
 
     state.shots ||= []
+
+    state.score ||= 0
+    state.lives ||= 3
+    state.info_zone ||= InfoZone.new(@args)
   end
 
   def render
     outputs.solids << { x: 0, y: 130, w: 1280, h: 610, r: 0, g: 0, b: 0 }
-    outputs.solids << { x: 0, y: 0, w: 1280, h: 130, r: 60, g: 60, b: 70 }
-    outputs.solids << { x: 305, y: 74, w: 600, h: 27, r: 255, g: 0, b: 0 }
-    outputs.solids << { x: 305, y: 74, w: state.hero.jetpack_power * 6, h: 27, r: 255, g: 255, b: 0 }
+    state.info_zone.render
     outputs.sprites << state.platforms
     outputs.sprites << state.fuels
     outputs.sprites << state.ores
@@ -133,38 +134,6 @@ class Game
     outputs.sprites << state.aliens
     outputs.sprites << state.aliens_disparition
     outputs.sprites << state.shots
-    outputs.labels << {
-      x: 200,
-      y: 65,
-      size_px: 40,
-      alignment_enum: 0,
-      vertical_alignment_enum: 0,
-      text: "POWER",
-      r: 255,
-      g: 255,
-      b: 255,
-    }
-    outputs.labels << {
-      x: 900,
-      y: 10,
-      size_px: 55,
-      alignment_enum: 2,
-      vertical_alignment_enum: 0,
-      text: @score,
-      r: 255,
-      g: 255,
-      b: 255,
-    }
-
-    @lives.times do |i|
-      outputs.sprites << {
-        x: 1_000 + i * 80,
-        y: 50,
-        w: 7 * 3,
-        h: 17 * 3,
-        path: 'sprites/hero-flying-0.png'
-      }
-    end
 
     if @game_over
       outputs.labels << {
@@ -304,7 +273,7 @@ class Game
           finished: false,
         })
         audio[:explosion] = { input: "sounds/explosion.wav" }
-        @score += 100
+        state.score += 100
         next
       end
 
@@ -379,8 +348,8 @@ class Game
   end
 
   def life_lost
-    @lives -= 1
-    if @lives == 0
+    state.lives -= 1
+    if state.lives == 0
       @game_over = true
       audio[:game_over] = { input: "sounds/game-over.wav" }
       return
@@ -394,7 +363,7 @@ class Game
     state.fuels.each do |f|
       if HeroAndFuelCollision.detect(state.hero, f)
         audio[:fuel] = { input: "sounds/fuel.mp3" }
-        @score += 10
+        state.score += 10
         break
       end
     end
@@ -405,7 +374,7 @@ class Game
     state.ores.each do |o|
       if HeroAndOreCollision.detect(state.hero, o)
         audio[:gold] = { input: "sounds/gold.wav" }
-        @score += 50
+        state.score += 50
         break
       end
     end
@@ -417,7 +386,7 @@ class Game
       state.hero.ore = 0
       state.level.collect_one_ore
       audio[:collect] = { input: "sounds/collect.wav" }
-      @score += 1_000
+      state.score += 1_000
     end
   end
 

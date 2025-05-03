@@ -1,5 +1,6 @@
 class Level
   attr_gtk
+  attr_reader :time
 
   TIME = 120
 
@@ -39,14 +40,6 @@ class Level
         r: 255, g: 255, b: 255,
       }
     end
-
-    outputs.labels << {
-      x: 40,
-      y: 110,
-      size_px: 70,
-      text: @time,
-      r: 255, g: 255, b: 255,
-    }
   end
 
   def calc
