@@ -19,12 +19,14 @@ require 'app/fuel_and_shot_collision.rb'
 require 'app/hero_and_fuel_collision.rb'
 require 'app/hero_and_ore_collision.rb'
 require 'app/info_zone.rb'
+require 'app/levels.rb'
 
 class Game
   attr_gtk
 
   def initialize
     @game_over = false
+    @level_number = 1
   end
 
   def tick
@@ -54,58 +56,16 @@ class Game
       last_shot_at: 0,
     }
 
-    state.platforms ||= [
-      { x: 0, y: 570, w: 200, h: 12, path: 'sprites/tile.png' },
-      { x: 400, y: 570, w: 700, h: 12, path: 'sprites/tile.png' },
-      { x: 1200, y: 570, w: 80, h: 12, path: 'sprites/tile.png' },
-      { x: 0, y: 420, w: 200, h: 12, path: 'sprites/tile.png' },
-      { x: 400, y: 420, w: 700, h: 12, path: 'sprites/tile.png' },
-      { x: 1200, y: 420, w: 80, h: 12, path: 'sprites/tile.png' },
-      { x: 0, y: 270, w: 200, h: 12, path: 'sprites/tile.png' },
-      { x: 400, y: 270, w: 700, h: 12, path: 'sprites/tile.png' },
-      { x: 1200, y: 270, w: 80, h: 12, path: 'sprites/tile.png' },
-      { x: 0, y: 130, w: 1280, h: 12, path: 'sprites/tile.png' },
-    ]
-
-    state.fuels ||= [
-      Fuel.new(x: 800, y: 142),
-      Fuel.new(x: 700, y: 142),
-      Fuel.new(x: 600, y: 142),
-      Fuel.new(x: 700, y: 282),
-      Fuel.new(x: 700, y: 432),
-      Fuel.new(x: 700, y: 582),
-    ]
-
-    state.ores ||= [
-      Ore.new(x: 1220, y: 282),
-      Ore.new(x: 1220, y: 282),
-      Ore.new(x: 500, y: 282),
-      Ore.new(x: 10, y: 282),
-      Ore.new(x: 10, y: 432),
-      Ore.new(x: 800, y: 432),
-      Ore.new(x: 1220, y: 432),
-      Ore.new(x: 800, y: 582),
-      Ore.new(x: 1220, y: 582),
-      Ore.new(x: 10, y: 142),
-      Ore.new(x: 1220, y: 142),
-    ]
-
+    state.platforms ||= Levels[@level_number].platforms
+    state.fuels ||= Levels[@level_number].fuels
+    state.ores ||= Levels[@level_number].ores
     state.collector ||= Collector.new(@args)
-
-    state.level ||=  Level.new(@args)
+    state.level ||=  Level.new(@args, remaining_ores: Levels[@level_number].ores_to_pick)
 
     state.aliens ||= []
     state.aliens_apparition ||= []
     state.aliens_disparition ||= []
-    state.aliens_pool ||= [
-      { x: 420, y: 582, w: ALIEN_W, h: ALIEN_H, alive: false, id: 0, speed: 3, x_min: 410, x_max: 1_000 },
-      { x: 80, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 1, speed: 1.8, x_min: 50, x_max: 120 },
-      { x: 700, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 2, speed: -1.8, x_min: 410, x_max: 1_000 },
-      { x: 80, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 3, speed: 1.7, x_min: 50, x_max: 120 },
-      { x: 900, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 4, speed: 1.7, x_min: 410, x_max: 1_000 },
-      { x: 200, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: 3.5, x_min: 50, x_max: 1_200 },
-      { x: 900, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: -2.9, x_min: 50, x_max: 1_200 },
-    ]
+    state.aliens_pool ||= Levels[@level_number].pool
 
     state.shots ||= []
 
@@ -117,6 +77,12 @@ class Game
   def render
     outputs.solids << { x: 0, y: 130, w: 1280, h: 610, r: 0, g: 0, b: 0 }
     state.info_zone.render
+
+    if state.level.complete?
+      render_level_complete_animation
+      return
+    end
+
     outputs.sprites << state.platforms
     outputs.sprites << state.fuels
     outputs.sprites << state.ores
@@ -148,8 +114,39 @@ class Game
         b: 255,
       }
     end
+  end
 
-    state.level.render
+  def render_level_complete_animation
+    if state.level.animation_phase == 1
+      outputs.labels << {
+        x: 640,
+        y: 360,
+        size_px: 120,
+        alignment_enum: 1,
+        vertical_alignment_enum: 1,
+        text: "Level Completed!",
+        r: 255, g: 255, b: 255,
+      }
+    elsif state.level.animation_phase == 2 || state.level.animation_phase == 3
+      outputs.labels << {
+        x: 640,
+        y: 560,
+        size_px: 120,
+        alignment_enum: 1,
+        vertical_alignment_enum: 1,
+        text: "Bonus Points",
+        r: 255, g: 255, b: 255,
+      }
+      outputs.labels << {
+        x: 640,
+        y: 360,
+        size_px: 120,
+        alignment_enum: 1,
+        vertical_alignment_enum: 1,
+        text: state.level.bonus_points,
+        r: 255, g: 255, b: 255,
+      }
+    end
   end
 
   def render_jetpack_flame
@@ -177,6 +174,8 @@ class Game
   end
 
   def input
+    return if state.level.complete?
+
     if inputs.left
       state.hero.moving = :left
       state.hero.facing = :left
@@ -206,6 +205,11 @@ class Game
   def calc
     return if @game_over
 
+    if state.level.complete?
+      calc_level_complete_animation
+      return
+    end
+
     calc_init
     calc_level
     calc_aliens
@@ -219,6 +223,35 @@ class Game
     calc_shot
     calc_fuel
     calc_clamp
+  end
+
+  def calc_level_complete_animation
+    if state.level.animation_phase == 1
+      if state.level.animation_started_at.nil?
+        state.level.animation_started_at = Kernel.tick_count
+      else
+        if Kernel.tick_count > state.level.animation_started_at + 60
+          state.level.animation_phase = 2
+          state.level.animation_started_at = Kernel.tick_count
+        end
+      end
+    elsif state.level.animation_phase == 2
+      # each 6 frames (0.1 second)
+      if Kernel.tick_count > state.level.animation_started_at + 6
+        state.level.time -= 1
+        state.level.animation_started_at = Kernel.tick_count
+        state.level.bonus_points += 500
+        audio[:gold] = { input: "sounds/gold.wav" }
+        if state.level.time == 0
+          state.score += state.level.bonus_points
+          state.level.animation_phase = 3
+        end
+      end
+    elsif state.level.animation_phase == 3
+      if Kernel.tick_count > state.level.animation_started_at + 60
+        next_level
+      end
+    end
   end
 
   def calc_init
@@ -440,6 +473,19 @@ class Game
   def calc_clamp
     state.hero.x = state.hero.x.clamp(0, Grid.w - state.hero.w)
     state.hero.y = state.hero.y.clamp(0, Grid.h - state.hero.h)
+  end
+
+  def next_level
+    @level_number += 1
+    # FIXME Is there another level or is it the last?
+
+    state.platforms = Levels[@level_number].platforms
+    state.fuels = Levels[@level_number].fuels
+    state.ores = Levels[@level_number].ores
+    state.aliens_pool = Levels[@level_number].pool
+    state.aliens = []
+
+    state.level.new_level(remaining_ores: Levels[@level_number].ores_to_pick)
   end
 end
 

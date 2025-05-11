@@ -1,14 +1,28 @@
 class Level
   attr_gtk
-  attr_reader :time
+  attr_accessor :animation_started_at, :animation_phase, :bonus_points, :time
 
   TIME = 120
 
-  def initialize(args)
+  def initialize(args, remaining_ores:)
     @args = args
-    @remaining_ores = 10
+    @remaining_ores = remaining_ores
     @completed = false
     @time = TIME
+
+    # Bonus
+    @bonus_points = 0
+    @animation_phase = 1
+    @animation_started_at = nil
+  end
+
+  def new_level(remaining_ores:)
+    @remaining_ores = remaining_ores
+    @completed = false
+    @time = TIME
+    @bonus_points = 0
+    @animation_phase = 1
+    @animation_started_at = nil
   end
 
   def complete?
@@ -26,20 +40,6 @@ class Level
   def collect_one_ore
     @remaining_ores -= 1
     @completed = true if @remaining_ores == 0
-  end
-
-  def render
-    if complete?
-      outputs.labels << {
-        x: 640,
-        y: 360,
-        size_px: 120,
-        alignment_enum: 1,
-        vertical_alignment_enum: 1,
-        text: "Level Completed!",
-        r: 255, g: 255, b: 255,
-      }
-    end
   end
 
   def calc
