@@ -41,13 +41,13 @@ module Levels
           Ore.new(x: 1220, y: 142),
         ],
         pool: [
-          { x: 420, y: 582, w: ALIEN_W, h: ALIEN_H, alive: false, id: 0, speed: 3, x_min: 410, x_max: 1_000 },
+          { x: 420, y: 582, w: ALIEN_W, h: ALIEN_H, alive: false, id: 0, speed: 5.1, x_min: 410, x_max: 1_000 },
           { x: 80, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 1, speed: 1.8, x_min: 50, x_max: 120 },
-          { x: 700, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 2, speed: -1.8, x_min: 410, x_max: 1_000 },
+          { x: 700, y: 432, w: ALIEN_W, h: ALIEN_H, alive: false, id: 2, speed: -3.8, x_min: 410, x_max: 1_000 },
           { x: 80, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 3, speed: 1.7, x_min: 50, x_max: 120 },
-          { x: 900, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 4, speed: 1.7, x_min: 410, x_max: 1_000 },
-          { x: 200, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: 3.5, x_min: 50, x_max: 1_200 },
-          { x: 900, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 6, speed: -2.9, x_min: 50, x_max: 1_200 },
+          { x: 900, y: 282, w: ALIEN_W, h: ALIEN_H, alive: false, id: 4, speed: 4.7, x_min: 410, x_max: 1_000 },
+          { x: 200, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 5, speed: 6, x_min: 50, x_max: 1_200 },
+          { x: 900, y: 142, w: ALIEN_W, h: ALIEN_H, alive: false, id: 6, speed: -4.9, x_min: 50, x_max: 1_200 },
         ],
       },
       # Level 2
